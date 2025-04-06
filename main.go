@@ -1,7 +1,13 @@
 package main
 
-import "fmt"
+import (
+	"log"
+
+	"github.com/ikonera/codex/handlers/cli"
+)
 
 func main() {
-	fmt.Println("New project: Codex")
+	if err := cli.Run(); err != nil {
+		log.Fatalf("Failed to run codex: %s\n", err.Error())
+	}
 }
