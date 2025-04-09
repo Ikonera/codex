@@ -27,6 +27,7 @@ func CheckForConfigFile() error {
 				if err := initializeConfigFile(); err != nil {
 					log.Fatalf("Can't initialize codex configuration file: %s\n", err.Error())
 				}
+				return nil
 			case "n":
 				fmt.Printf("To configure Codex, create or edit: %s\n", getCodexConfigPath())
 				return nil
@@ -60,18 +61,16 @@ func initializeConfigFile() error {
 	}
 	defer configFile.Close()
 
-	defaultConf, err := setDefaultConfig()
-	if err != nil {
-		return nil
-	}
-	if err := writeConfig(defaultConf, configFile); err != nil {
-		return err
-	}
+	var config *models.Config
+
+	config = setDefaultConfig()
+
 	userConf, err := askForUserConfig()
 	if err != nil {
 		return err
 	}
-	if err := writeConfig(userConf, configFile); err != nil {
+	config = userConf
+	if err := writeConfig(config, configFile); err != nil {
 		return err
 	}
 
@@ -84,21 +83,36 @@ func askForUserConfig() (*models.Config, error) {
 	userAk := prompter.Prompt("Enter a valid access key: ")
 	userSk := prompter.Prompt("Enter a valid secret key: ")
 	userCredentials := models.NewCredentials(userAk, userSk)
-	fmt.Println("Register at least one Codex.")
+	fmt.Println("\nRegister at least one Codex.")
 	codexName := prompter.Prompt("Codex name: ")
-	codexSource := prompter.Prompt("Codex source: ")
+
+	codexSource := registerLocalSource(prompter)
+
 	codexBucket := prompter.Prompt("Codex destination bucket: ")
 	userCodexes := []*models.Codex{models.NewCodex(codexName, codexSource, codexBucket)}
 	userConfig := models.NewConfig(userCredentials, userCodexes)
 	return userConfig, nil
 }
 
-func setDefaultConfig() (*models.Config, error) {
+func registerLocalSource(p *utils.CLIPrompter) string {
+	var path string
+	for {
+		path = p.Prompt("Codex local source: ")
+		if _, err := os.Stat(path); os.IsNotExist(err) {
+			fmt.Print("Please enter a valid local path ! ")
+		} else {
+			break
+		}
+	}
+	return path
+}
+
+func setDefaultConfig() *models.Config {
 	defaultCredentials := models.NewCredentials("", "")
 	defaultCodexes := []*models.Codex{models.NewCodex("default", "", "")}
 	defaultConfig := models.NewConfig(defaultCredentials, defaultCodexes)
 
-	return defaultConfig, nil
+	return defaultConfig
 }
 
 func writeConfig(config *models.Config, file *os.File) error {
