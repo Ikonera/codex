@@ -22,9 +22,11 @@ func Run() error {
 		return nil
 	}
 
+	cfgManager := config.NewYAMLConfigManager()
+
 	switch os.Args[1] {
 	case "init":
-		if err := handleInitCmd(); err != nil {
+		if err := handleInitCmd(cfgManager); err != nil {
 			return err
 		}
 	case "help":
@@ -36,10 +38,10 @@ func Run() error {
 	return nil
 }
 
-func handleInitCmd() error {
+func handleInitCmd(m config.IConfigManager) error {
 	displayHeader()
 
-	if err := config.CheckForConfigFile(); err != nil {
+	if err := m.CheckForConfig(); err != nil {
 		return err
 	}
 
